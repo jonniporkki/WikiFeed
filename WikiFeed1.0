@@ -1,87 +1,154 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-  <meta charset="UTF-8">
-  <title>Wikipedia Feed</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>WikiFeed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #000;
-      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0e0e0e;
+      color: #ffffff;
       overflow-y: scroll;
       scroll-snap-type: y mandatory;
     }
 
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 14px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 20px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+      z-index: 10;
+    }
+
+    .feed {
+      margin-top: 60px;
+    }
+
     .card {
-      height: 100vh;
-      padding: 20px;
-      box-sizing: border-box;
+      height: calc(100vh - 60px);
+      padding: 24px;
       scroll-snap-align: start;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      gap: 16px;
+      animation: fadeSlide 0.5s ease;
     }
 
-    h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     img {
-      max-width: 100%;
-      border-radius: 10px;
-      margin-bottom: 15px;
+      max-height: 40vh;
+      object-fit: cover;
+      border-radius: 14px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 26px;
+      line-height: 1.2;
+      margin: 0;
     }
 
     p {
-      font-size: 18px;
-      line-height: 1.4;
+      font-size: 17px;
+      line-height: 1.5;
+      opacity: 0.9;
+    }
+
+    .hint {
+      position: fixed;
+      bottom: 16px;
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      opacity: 0.5;
     }
   </style>
 </head>
 
 <body>
 
+<header>📚 WikiFeed</header>
+
+<div class="feed" id="feed"></div>
+
+<div class="hint">Scrollaa ylös / alas</div>
+
 <script>
-async function loadArticle() {
-  const res = await fetch(
-    "https://fi.wikipedia.org/api/rest_v1/page/random/summary"
-  );
-  const data = await res.json();
+  const feed = document.getElementById("feed");
+  let loading = false;
 
-  const card = document.createElement("div");
-  card.className = "card";
+  async function loadArticle() {
+    if (loading) return;
+    loading = true;
 
-  if (data.thumbnail) {
-    const img = document.createElement("img");
-    img.src = data.thumbnail.source;
-    card.appendChild(img);
+    try {
+      const response = await fetch(
+        "https://fi.wikipedia.org/api/rest_v1/page/random/summary"
+      );
+      const data = await response.json();
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      if (data.thumbnail) {
+        const img = document.createElement("img");
+        img.src = data.thumbnail.source;
+        card.appendChild(img);
+      }
+
+      const title = document.createElement("h1");
+      title.textContent = data.title;
+
+      const text = document.createElement("p");
+      text.textContent = data.extract;
+
+      card.appendChild(title);
+      card.appendChild(text);
+
+      feed.appendChild(card);
+    } catch (e) {
+      console.error("Virhe ladattaessa artikkelia", e);
+    }
+
+    loading = false;
   }
 
-  const title = document.createElement("h1");
-  title.textContent = data.title;
-
-  const text = document.createElement("p");
-  text.textContent = data.extract;
-
-  card.appendChild(title);
-  card.appendChild(text);
-
-  document.body.appendChild(card);
-}
-
-for (let i = 0; i < 5; i++) {
-  loadArticle();
-}
-
-window.addEventListener("scroll", () => {
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+  // Lataa aluksi muutama artikkeli
+  for (let i = 0; i < 4; i++) {
     loadArticle();
   }
-});
+
+  // Loputon scroll
+  window.addEventListener("scroll", () => {
+    if (
+      window.innerHeight + window.scrollY >=
+      document.body.offsetHeight - 300
+    ) {
+      loadArticle();
+    }
+  });
 </script>
 
 </body>
